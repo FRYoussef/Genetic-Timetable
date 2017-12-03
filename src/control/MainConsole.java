@@ -31,11 +31,11 @@ public class MainConsole {
             Set<Individual<String>> population = new HashSet<>();
             ArrayList<String> alpha = new ArrayList<>(hsAlphabet);
             for (int i = 0; i < 50; i++) {
-                population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha));
+                population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions));
             }
 
             GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                    new ArrayList<>(hsAlphabet), 0.05);
+                    new ArrayList<>(hsAlphabet), 0.15);
 
             // Run for a set amount of time
             Individual<String> bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);

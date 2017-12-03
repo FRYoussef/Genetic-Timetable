@@ -27,12 +27,24 @@ public class TimetableGenAlgoUtil {
         return new TimetableFitnessFunction(hmRestrictions, hmPreferences, turns);
     }
 
+
+    public static Individual<String> generateRandomIndividual(int turns, ArrayList<String> alphabet,
+                                                              HashMap<String, HashSet<Integer>> hmRestrictions)
+    {
+        Individual<String> indi = getRandomIndividual(turns, alphabet);
+
+        while(!testRestrictions(indi, hmRestrictions))
+            indi = getRandomIndividual(turns, alphabet);
+
+        return indi;
+    }
+
     /**
      * It returns a random individual
      * @param turns to create an individual
      * @return the individual
      */
-    public static Individual<String> generateRandomIndividual(int turns, ArrayList<String> alphabet){
+    private static Individual<String> getRandomIndividual(int turns, ArrayList<String> alphabet){
         String [] indi = new String[MAX_TURNS];
         int pos;
         int posAlphabet;
@@ -48,7 +60,6 @@ public class TimetableGenAlgoUtil {
 
         return new Individual<>(new ArrayList<>(Arrays.asList(indi)));
     }
-
 
     /**
      * A test to verify if an individual satisfy the restrictions
@@ -73,7 +84,7 @@ public class TimetableGenAlgoUtil {
      * @param turns
      * @return
      */
-    private static int testRepeticions(Individual<String> ind, int turns){
+    private static int testRepetitions(Individual<String> ind, int turns){
         HashMap<String, Integer> hmRepetitions = new HashMap<>();
         int counter = 0;
         for (String s : ind.getRepresentation()){
@@ -102,7 +113,7 @@ public class TimetableGenAlgoUtil {
 
         @Override
         public boolean test(Individual<String> individual) {
-            return testRestrictions(individual, hmRestrictions) && testRepeticions(individual, turns) != -1;
+            return testRestrictions(individual, hmRestrictions) && testRepetitions(individual, turns) != -1;
         }
     }
 
@@ -124,7 +135,7 @@ public class TimetableGenAlgoUtil {
         public double apply(Individual<String> individual) {
             if(!testRestrictions(individual, hmRestrictions))
                 return 0.0d;
-            int repetitions = testRepeticions(individual, turns);
+            int repetitions = testRepetitions(individual, turns);
             if(repetitions == -1)
                 return 0.0d;
             else if(repetitions > 0)
