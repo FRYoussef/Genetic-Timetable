@@ -13,7 +13,6 @@ public class MainConsole {
 
     private static Scanner sc;
     private static int turns = 0;
-    private static int numTeachers = 0;
     private static HashSet<String> hsAlphabet;
     private static HashMap<String, HashSet<Integer>> hmRestrictions;
     private static HashMap<String, HashSet<Integer>> hmPreferences;
@@ -60,9 +59,8 @@ public class MainConsole {
             TimetableFileReader reader = new TimetableFileReader(sc.nextLine());
             turns = reader.getTurns();
             hsAlphabet = reader.getTeachers();
-            numTeachers = hsAlphabet.size();
-            hmRestrictions = reader.getTeacherRestrictions(numTeachers);
-            hmPreferences = reader.getTeacherPreferences(numTeachers);
+            hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
+            hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
             reader.close();
         } catch (Exception e) {
             e.printStackTrace();
