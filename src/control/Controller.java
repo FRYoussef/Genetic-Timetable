@@ -7,6 +7,7 @@ import aima.Individual;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -35,12 +36,22 @@ public class Controller {
     private TextField _tfPath;
     @FXML
     private TextArea _taLog;
+    @FXML
+    private Button _btFileFinder;
+    @FXML
+    private Button _btGenerate;
+    @FXML
+    private TextField _tfMutation;
+    @FXML
+    private TextField _tfCrossing;
 
     private int turns = 0;
     private HashSet<String> hsAlphabet = null;
     private HashMap<String, HashSet<Integer>> hmRestrictions = null;
     private HashMap<String, HashSet<Integer>> hmPreferences = null;
     private Individual<String> bestIndividual = null;
+    private double mutationProbability = 0.15d;
+    private double crossingProbability = 0.70d;
 
     public Controller() {
         this.stage = new Stage();
@@ -65,49 +76,39 @@ public class Controller {
 
     public void onClickFileFinder(ActionEvent actionEvent) {
         Platform.runLater(() -> {
+            _btFileFinder.setDisable(true);
             File file = fileChooser.showOpenDialog(stage);
             if (file != null)
                 _tfPath.setText(file.getPath());
+            _btFileFinder.setDisable(false);
         });
     }
 
     public void onClickGenerate(ActionEvent actionEvent) {
         if(_tfPath.getText().equals("") || _tfPath.getText() == null)
+        {
+            writeTA("You should to introduce a path");
             return;
-
+        }
         String nom = _tfPath.getText();
-       
-        Thread th = new Thread(() -> {
-            try{
-                //file read
-                TimetableFileReader reader = new TimetableFileReader(nom);
-                turns = reader.getTurns();
-                hsAlphabet = reader.getTeachers();
-                hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
-                hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
-                reader.close();
 
-                FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
-                        hmPreferences);
-                GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
-                // Generate an initial population
-                Set<Individual<String>> population = new HashSet<>();
-                ArrayList<String> alpha = new ArrayList<>(hsAlphabet);
-                for (int i = 0; i < 50; i++) {
-                    population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions));
-                }
-
-                GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                        new ArrayList<>(hsAlphabet), 0.15);
-
-                // Run for a set amount of time
-                bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
-                clearTimeTable();
-                showResult();
-            }catch (Exception e){
-                e.printStackTrace();
+        try{
+            if(_tfMutation.getText() != null)
+                mutationProbability = Double.parseDouble(_tfMutation.getText());
+            if(_tfCrossing.getText() != null)
+                crossingProbability = Double.parseDouble(_tfCrossing.getText());
+            if(crossingProbability < 0 || crossingProbability > 1
+                    || mutationProbability < 0 || mutationProbability > 1)
+            {
+                throw new Exception("The probability should be between 0 and 1");
             }
-        });
+        }catch (Exception e){
+            e.printStackTrace();
+            writeTA(e.getMessage());
+            return;
+        }
+        _btGenerate.setDisable(true);
+        Thread th = new Thread(new RnGenetic(nom));
         th.setDaemon(true);
         th.start();
     }
@@ -136,6 +137,50 @@ public class Controller {
     }
 
     private void writeTA(String text){
-        _taLog.appendText(text + "\n");
+        Platform.runLater(() -> _taLog.appendText(text + "\n"));
+    }
+
+    private class RnGenetic implements Runnable{
+
+        private String nom;
+
+        public RnGenetic(String nom) {
+            this.nom = nom;
+        }
+
+        @Override
+        public void run() {
+            try{
+                //file read
+                TimetableFileReader reader = new TimetableFileReader(nom);
+                turns = reader.getTurns();
+                hsAlphabet = reader.getTeachers();
+                hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
+                hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
+                reader.close();
+
+                FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
+                        hmPreferences);
+                GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
+                // Generate an initial population
+                Set<Individual<String>> population = new HashSet<>();
+                ArrayList<String> alpha = new ArrayList<>(hsAlphabet);
+                for (int i = 0; i < 50; i++) {
+                    population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions));
+                }
+
+                GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
+                        new ArrayList<>(hsAlphabet), mutationProbability);
+
+                // Run for a set amount of time
+                bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
+                clearTimeTable();
+                showResult();
+                Platform.runLater(() -> _btGenerate.setDisable(false));
+            }catch (Exception e){
+                e.printStackTrace();
+                writeTA(e.getMessage());
+            }
+        }
     }
 }
