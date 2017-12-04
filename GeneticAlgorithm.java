@@ -3,9 +3,7 @@ package aima;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
-import java.util.Scanner;
 
 /**
  * Artificial Intelligence A Modern Approach (3rd Edition): Figure 4.8, page
@@ -59,22 +57,25 @@ public class GeneticAlgorithm<A> {
     protected int individualLength;
     protected List<A> finiteAlphabet;
     protected double mutationProbability;
+    protected double crossingProbability;
 
     protected Random random;
     private List<ProgressTracker<A>> progressTrackers = new ArrayList<ProgressTracker<A>>();
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability) {
-        this(individualLength, finiteAlphabet, mutationProbability, new Random());
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability) {
+        this(individualLength, finiteAlphabet, mutationProbability, crossingProbability, new Random());
     }
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability,
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability, 
                             Random random) {
         this.individualLength = individualLength;
         this.finiteAlphabet = new ArrayList<A>(finiteAlphabet);
         this.mutationProbability = mutationProbability;
+        this.crossingProbability = crossingProbability;
         this.random = random;
 
         assert (this.mutationProbability >= 0.0 && this.mutationProbability <= 1.0);
+        assert (this.crossingProbability >= 0.0 && this.crossingProbability <= 1.0);
     }
 
     /** Progress tracers can be used to display progress information. */
@@ -228,11 +229,7 @@ public class GeneticAlgorithm<A> {
      * generation. Override to get progress information!
      */
     protected List<Individual<A>> nextGeneration(List<Individual<A>> population, FitnessFunction<A> fitnessFn) {
-		@SuppressWarnings("resource")
-		Scanner s = new Scanner(System.in).useLocale(Locale.US);
-		System.out.println("Introduce crossing probability:");
-		double crossingProbability = s.nextDouble();
-    	// new_population <- empty set
+        // new_population <- empty set
         List<Individual<A>> newPopulation = new ArrayList<Individual<A>>(population.size());
         // for i = 1 to SIZE(population) do
         for (int i = 0; i < population.size(); i++) {
@@ -240,21 +237,26 @@ public class GeneticAlgorithm<A> {
             Individual<A> x = randomSelection(population, fitnessFn);
             // y <- RANDOM-SELECTION(population, FITNESS-FN)
             Individual<A> y = randomSelection(population, fitnessFn);
-            
-			if(random.nextDouble() <= crossingProbability) {
+           
+            if(random.nextDouble() <= crossingProbability ) {
 	            // child <- REPRODUCE(x, y)
-	            List<Individual<A>> children = reproduce(x, y);
+            	List<Individual<A>> children = reproduce(x, y);
+            	//3.1
+	            //Individual<A> child = reproduce(x, y);
 	            // if (small random probability) then child <- MUTATE(child)
 	            if (random.nextDouble() <= mutationProbability) {
 	            	children.set(0, mutate(children.get(0)));
 	            	children.set(1, mutate(children.get(1)));
+	            	//3.1
+	                //child = mutate(child);
 	            }
 	            
 	            double fValue_x = fitnessFn.apply(x);
 	            double fValue_y = fitnessFn.apply(y);
 	            double fValue_child1 = fitnessFn.apply(children.get(0));
 	            double fValue_child2 = fitnessFn.apply(children.get(1));
-	            if(fValue_child1 > fValue_x && fValue_child1 > fValue_y) {
+	            //3.3
+	            if(fValue_child1 >= fValue_x && fValue_child1 >= fValue_y) {
 		            // add child to new_population
 		            newPopulation.add(children.get(0));
 	            }
@@ -262,12 +264,16 @@ public class GeneticAlgorithm<A> {
 	            	// add child to new_population
 		            newPopulation.add(children.get(1));
 	            }
-			}
-			//else {
-				//System.out.println("It wasn't posible to do the crossing");
-			//}
+	            // add child to new_population
+	            //3.1
+	            //newPopulation.add(child);
+	            //3.2
+	            /*
+	            newPopulation.add(children.get(0));
+	            newPopulation.add(children.get(1));
+	            */
+            }
         }
-        s.close();
         notifyProgressTrackers(getIterations(), population);
         return newPopulation;
     }
@@ -305,21 +311,28 @@ public class GeneticAlgorithm<A> {
     // function REPRODUCE(x, y) returns an individual
     // inputs: x, y, parent individuals
     protected List<Individual<A>> reproduce(Individual<A> x, Individual<A> y) {
-        // n <- LENGTH(x);
+   	 int c = randomOffset(individualLength);
+
+   	Individual<A> child1Representation = this.reproduceAux(x,y,c);
+   	Individual<A> child2Representation = this.reproduceAux(y,x,c);
+   	List<Individual<A>> a = new ArrayList<Individual<A>>();
+   	    	a.add(0, child1Representation);
+       a.add(1, child2Representation);
+       return a;
+   }
+    
+    protected Individual<A> reproduceAux(Individual<A> x, Individual<A> y, int c) {
+  	  
+    	// n <- LENGTH(x);
         // Note: this is = this.individualLength
         // c <- random number from 1 to n
-        int c = randomOffset(individualLength);
+       
         // return APPEND(SUBSTRING(x, 1, c), SUBSTRING(y, c+1, n))
-        List<A> child1Representation = new ArrayList<A>();
-        List<A> child2Representation = new ArrayList<A>();
-        List<Individual<A>> a = new ArrayList<Individual<A>>();
-        child1Representation.addAll(x.getRepresentation().subList(0, c));
-        child1Representation.addAll(y.getRepresentation().subList(c, individualLength));
-        child2Representation.addAll(y.getRepresentation().subList(0, c));
-        child2Representation.addAll(x.getRepresentation().subList(c, individualLength));
-        a.add(0, new Individual<A>(child1Representation));
-        a.add(1, new Individual<A>(child2Representation));
-        return a;
+        List<A> childRepresentation = new ArrayList<A>();
+        childRepresentation.addAll(x.getRepresentation().subList(0, c));
+        childRepresentation.addAll(y.getRepresentation().subList(c, individualLength));
+
+        return new Individual<A>(childRepresentation);
     }
 
     protected Individual<A> mutate(Individual<A> child) {
