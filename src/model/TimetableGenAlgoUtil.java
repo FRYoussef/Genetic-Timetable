@@ -138,10 +138,8 @@ public class TimetableGenAlgoUtil {
             int repetitions = testRepetitions(individual, turns);
             if(repetitions == -1)
                 return 0.0d;
-            else if(repetitions > 0)
-                return 0.1d / repetitions;
-
-            return countPreferences(individual)+0.5d;
+            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d);
+            return remainder < 0 ? 0: remainder;
         }
 
         private int countPreferences(Individual<String> indi){

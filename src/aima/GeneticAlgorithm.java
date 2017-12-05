@@ -57,22 +57,25 @@ public class GeneticAlgorithm<A> {
     protected int individualLength;
     protected List<A> finiteAlphabet;
     protected double mutationProbability;
+    protected double crossingProbability;
 
     protected Random random;
     private List<ProgressTracker<A>> progressTrackers = new ArrayList<ProgressTracker<A>>();
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability) {
-        this(individualLength, finiteAlphabet, mutationProbability, new Random());
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability) {
+        this(individualLength, finiteAlphabet, mutationProbability, crossingProbability, new Random());
     }
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability,
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability,
                             Random random) {
         this.individualLength = individualLength;
         this.finiteAlphabet = new ArrayList<A>(finiteAlphabet);
         this.mutationProbability = mutationProbability;
+        this.crossingProbability = crossingProbability;
         this.random = random;
 
         assert (this.mutationProbability >= 0.0 && this.mutationProbability <= 1.0);
+        assert (this.crossingProbability >= 0.0 && this.crossingProbability <= 1.0);
     }
 
     /** Progress tracers can be used to display progress information. */
@@ -234,14 +237,66 @@ public class GeneticAlgorithm<A> {
             Individual<A> x = randomSelection(population, fitnessFn);
             // y <- RANDOM-SELECTION(population, FITNESS-FN)
             Individual<A> y = randomSelection(population, fitnessFn);
-            // child <- REPRODUCE(x, y)
-            Individual<A> child = reproduce(x, y);
-            // if (small random probability) then child <- MUTATE(child)
-            if (random.nextDouble() <= mutationProbability) {
-                child = mutate(child);
+
+            if(random.nextDouble() <= crossingProbability ) {
+                // child <- REPRODUCE(x, y)
+                List<Individual<A>> children = reproduce(x, y);
+                //3.1
+                //Individual<A> child = reproduce(x, y);
+                // if (small random probability) then child <- MUTATE(child)
+                if (random.nextDouble() <= mutationProbability) {
+                    children.set(0, mutate(children.get(0)));
+                    children.set(1, mutate(children.get(1)));
+                    //3.1
+                    //child = mutate(child);
+                }
+                double xValue = fitnessFn.apply(x);
+                double yValue = fitnessFn.apply(y);
+                double higgherValue = xValue >= yValue ? xValue:yValue;
+                double nextHighValue = xValue >= yValue ? yValue:xValue;
+                double fChild1 = fitnessFn.apply(children.get(0));
+                double fChild2 = fitnessFn.apply(children.get(1));
+                //3.3
+                if(fChild1 >= higgherValue || fChild2 >= higgherValue) {
+                    // add child to new_population
+                    Individual<A> c;
+                    if(fChild1 >= fChild2)
+                    {
+                        c = children.get(0);
+                        fChild1 = 0d;
+                    }
+                    else
+                    {
+                        c = children.get(1);
+                        fChild2 = 0d;
+                    }
+
+                    newPopulation.add(c);
+                }
+                else {
+                    Individual<A> c;
+                    if(xValue >= yValue)
+                    {
+                        c = x;
+                        xValue = 0;
+                    }
+                    else
+                    {
+                        c = y;
+                        yValue = 0;
+                    }
+                    newPopulation.add(c);
+                }
+
+                if(fChild1 >= nextHighValue || fChild2 >= nextHighValue) {
+                    // add child to new_population
+                    newPopulation.add(fChild1 >= fChild2 ? children.get(0):children.get(1));
+                }
+                else {
+                    newPopulation.add(xValue >= yValue ? x:y);
+                }
+
             }
-            // add child to new_population
-            newPopulation.add(child);
         }
         notifyProgressTrackers(getIterations(), population);
         return newPopulation;
@@ -279,11 +334,23 @@ public class GeneticAlgorithm<A> {
 
     // function REPRODUCE(x, y) returns an individual
     // inputs: x, y, parent individuals
-    protected Individual<A> reproduce(Individual<A> x, Individual<A> y) {
+    protected List<Individual<A>> reproduce(Individual<A> x, Individual<A> y) {
+        int c = randomOffset(individualLength);
+
+        Individual<A> child1Representation = this.reproduceAux(x,y,c);
+        Individual<A> child2Representation = this.reproduceAux(y,x,c);
+        List<Individual<A>> a = new ArrayList<Individual<A>>();
+        a.add(0, child1Representation);
+        a.add(1, child2Representation);
+        return a;
+    }
+
+    protected Individual<A> reproduceAux(Individual<A> x, Individual<A> y, int c) {
+
         // n <- LENGTH(x);
         // Note: this is = this.individualLength
         // c <- random number from 1 to n
-        int c = randomOffset(individualLength);
+
         // return APPEND(SUBSTRING(x, 1, c), SUBSTRING(y, c+1, n))
         List<A> childRepresentation = new ArrayList<A>();
         childRepresentation.addAll(x.getRepresentation().subList(0, c));

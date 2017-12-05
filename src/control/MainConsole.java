@@ -33,8 +33,13 @@ public class MainConsole {
                 population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions));
             }
 
+            System.out.println("Introduce mutationProbability: ");
+            double mutationProbability = Double.parseDouble(sc.nextLine());
+            System.out.println("Introduce crossingProbability: ");
+            double crossingProbability = Double.parseDouble(sc.nextLine());
+
             GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                    new ArrayList<>(hsAlphabet), 0.15);
+                    new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability);
 
             // Run for a set amount of time
             Individual<String> bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);

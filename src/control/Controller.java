@@ -170,7 +170,7 @@ public class Controller {
                 }
 
                 GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                        new ArrayList<>(hsAlphabet), mutationProbability);
+                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability);
 
                 // Run for a set amount of time
                 bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
