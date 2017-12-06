@@ -11,6 +11,8 @@ public class TimetableFileReader {
 
     private static final String REGEX1 = ",";
     private static final String REGEX2 = ":";
+    private static final String CONSECUTIVE = "+";
+    private static final String NOT_CONSECUTIVE = "-";
     private String file = null;
     private BufferedReader br = null;
 
@@ -35,16 +37,18 @@ public class TimetableFileReader {
      * It returns the teacher´s restrictions from the file
      * @param numTeachers number of teachers
      * @return hashMap with the restrictions
-     *  @throws IOException
+     *  @throws Exception
      */
-    public HashMap<String, HashSet<Integer>> getTeacherRestrictions(int numTeachers) throws IOException {
+    public HashMap<String, HashSet<Integer>> getTeacherRestrictions(int numTeachers) throws Exception {
         HashMap<String, HashSet<Integer>> hm = new HashMap<>(numTeachers);
         HashSet<Integer> hs;
         String aux[];
         int rest[];
         for (int i = 0; i < numTeachers; i++) {
-            aux = br.readLine().replaceAll("\\s+","").split(REGEX2);
-            if(aux.length == 2) {
+            aux = simplifyString(br.readLine());
+            if(aux == null)
+                throw new Exception("Error in the input file structure");
+            if(aux.length == 2){
                 rest = Arrays.stream(aux[1].split(REGEX1)).mapToInt(Integer::parseInt).toArray();
                 hs = IntStream.of(rest).boxed().collect(Collectors.toCollection(HashSet::new));
             }
@@ -60,15 +64,17 @@ public class TimetableFileReader {
      * It returns the teacher´s preferences from the file
      * @param numTeachers
      * @return hashMap with the preferences
-     * @throws IOException
+     * @throws Exception
      */
-    public HashMap<String, HashSet<Integer>> getTeacherPreferences(int numTeachers) throws IOException {
+    public HashMap<String, HashSet<Integer>> getTeacherPreferences(int numTeachers) throws Exception {
         HashMap<String, HashSet<Integer>> hm = new HashMap<>(numTeachers);
         HashSet<Integer> hs;
         String aux[];
         int rest[];
         for (int i = 0; i < numTeachers; i++) {
-            aux = br.readLine().replaceAll("\\s+","").split(REGEX2);
+            aux = simplifyString(br.readLine());
+            if(aux == null)
+                throw new Exception("Error in the input file structure");
             if(aux.length == 2){
                 rest = Arrays.stream(aux[1].split(REGEX1)).mapToInt(Integer::parseInt).toArray();
                 hs = IntStream.of(rest).boxed().collect(Collectors.toCollection(HashSet::new));
@@ -81,6 +87,38 @@ public class TimetableFileReader {
         return hm;
     }
 
+    /**
+     * It reads from the file if the teacher wants to a consecutive turns "+"
+     * or not "-", default is not consecutive
+     * @param numTeachers
+     * @return
+     * @throws Exception
+     */
+    public HashMap<String, Boolean> getTeacherConsecutivePreferences(int numTeachers) throws Exception {
+        HashMap<String, Boolean> hm = new HashMap<>(numTeachers);
+        String aux[];
+        int rest[];
+        for (int i = 0; i < numTeachers; i++) {
+            aux = simplifyString(br.readLine());
+            if(aux == null)
+                throw new Exception("Error in the input file structure");
+            if(aux.length == 2){
+                if(aux[1].equals(CONSECUTIVE) || aux[1].equals(NOT_CONSECUTIVE))
+                    hm.put(aux[0], aux[1].equals(CONSECUTIVE)?true:false);
+                else
+                    throw new Exception("Error in the input file structure");
+
+            }
+            else
+                hm.put(aux[0], false);
+
+        }
+        return hm;
+    }
+
+    private String[] simplifyString(String str){
+       return str == null ? null:str.replaceAll("\\s+","").split(REGEX2);
+    }
 
     public void close() throws IOException {
         br.close();

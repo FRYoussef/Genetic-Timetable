@@ -58,20 +58,28 @@ public class GeneticAlgorithm<A> {
     protected List<A> finiteAlphabet;
     protected double mutationProbability;
     protected double crossingProbability;
+    protected boolean aimaMutation;
 
     protected Random random;
     private List<ProgressTracker<A>> progressTrackers = new ArrayList<ProgressTracker<A>>();
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability) {
-        this(individualLength, finiteAlphabet, mutationProbability, crossingProbability, new Random());
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability,
+                            double crossingProbability) {
+        this(individualLength, finiteAlphabet, mutationProbability, crossingProbability, true,new Random());
     }
 
-    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability, double crossingProbability,
-                            Random random) {
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability,
+                            double crossingProbability, boolean aimaMutation) {
+        this(individualLength, finiteAlphabet, mutationProbability, crossingProbability, aimaMutation,new Random());
+    }
+
+    public GeneticAlgorithm(int individualLength, Collection<A> finiteAlphabet, double mutationProbability,
+                            double crossingProbability, boolean aimaMutation, Random random) {
         this.individualLength = individualLength;
         this.finiteAlphabet = new ArrayList<A>(finiteAlphabet);
         this.mutationProbability = mutationProbability;
         this.crossingProbability = crossingProbability;
+        this.aimaMutation = aimaMutation;
         this.random = random;
 
         assert (this.mutationProbability >= 0.0 && this.mutationProbability <= 1.0);
@@ -245,8 +253,14 @@ public class GeneticAlgorithm<A> {
                 //Individual<A> child = reproduce(x, y);
                 // if (small random probability) then child <- MUTATE(child)
                 if (random.nextDouble() <= mutationProbability) {
-                    children.set(0, mutate(children.get(0)));
-                    children.set(1, mutate(children.get(1)));
+                    if(aimaMutation){
+                        children.set(0, mutate(children.get(0)));
+                        children.set(1, mutate(children.get(1)));
+                    }
+                    else{
+                        for (int j = 0; j < children.size(); j++)
+                            children.set(j, mutateTwoPoints(children.get(j)));
+                    }
                     //3.1
                     //child = mutate(child);
                 }
@@ -368,6 +382,22 @@ public class GeneticAlgorithm<A> {
         mutatedRepresentation.set(mutateOffset, finiteAlphabet.get(alphaOffset));
 
         return new Individual<A>(mutatedRepresentation);
+    }
+
+    /**
+     * It selects two random points to changed
+     * @param child
+     */
+    protected Individual<A> mutateTwoPoints(Individual<A> child){
+        int firstGen = randomOffset(individualLength);
+        int secondGen = randomOffset(individualLength);
+        List<A> mutated = new ArrayList<A>(child.getRepresentation());
+
+        A genAux = mutated.get(firstGen);
+        mutated.set(firstGen, mutated.get(secondGen));
+        mutated.set(secondGen, genAux);
+
+        return new Individual<>(mutated);
     }
 
     protected int randomOffset(int length) {
