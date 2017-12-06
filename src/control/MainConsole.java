@@ -16,6 +16,7 @@ public class MainConsole {
     private static HashSet<String> hsAlphabet;
     private static HashMap<String, HashSet<Integer>> hmRestrictions;
     private static HashMap<String, HashSet<Integer>> hmPreferences;
+    private static HashMap<String, Boolean> hmConsecutive;
 
     public static void main(String[] args) {
         sc = new Scanner(System.in);
@@ -24,7 +25,7 @@ public class MainConsole {
 
         try{
             FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
-                    hmPreferences);
+                    hmPreferences, hmConsecutive);
             GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
             // Generate an initial population
             Set<Individual<String>> population = new HashSet<>();
@@ -66,6 +67,7 @@ public class MainConsole {
             hsAlphabet = reader.getTeachers();
             hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
             hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
+            hmConsecutive = reader.getTeacherConsecutivePreferences(hsAlphabet.size());
             reader.close();
         } catch (Exception e) {
             e.printStackTrace();

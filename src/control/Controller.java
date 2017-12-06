@@ -7,10 +7,7 @@ import aima.Individual;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -44,14 +41,18 @@ public class Controller {
     private TextField _tfMutation;
     @FXML
     private TextField _tfCrossing;
+    @FXML
+    private MenuButton _btmTypeMutation;
 
     private int turns = 0;
     private HashSet<String> hsAlphabet = null;
     private HashMap<String, HashSet<Integer>> hmRestrictions = null;
     private HashMap<String, HashSet<Integer>> hmPreferences = null;
+    private HashMap<String, Boolean> hmConsecutive = null;
     private Individual<String> bestIndividual = null;
     private double mutationProbability = 0.15d;
     private double crossingProbability = 0.70d;
+    private boolean aimaMutation = true;
 
     public Controller() {
         this.stage = new Stage();
@@ -140,6 +141,18 @@ public class Controller {
         Platform.runLater(() -> _taLog.appendText(text + "\n"));
     }
 
+    public void onClickItemMutation(ActionEvent actionEvent) {
+        Platform.runLater(() -> {
+            String str = ((MenuItem)actionEvent.getSource()).getText();
+            _btmTypeMutation.setText(str);
+            if(str.equals("Aima Mutation"))
+                aimaMutation = true;
+            else
+                aimaMutation = false;
+
+        });
+    }
+
     private class RnGenetic implements Runnable{
 
         private String nom;
@@ -157,10 +170,11 @@ public class Controller {
                 hsAlphabet = reader.getTeachers();
                 hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
                 hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
+                hmConsecutive = reader.getTeacherConsecutivePreferences(hsAlphabet.size());
                 reader.close();
 
                 FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
-                        hmPreferences);
+                        hmPreferences, hmConsecutive);
                 GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
                 // Generate an initial population
                 Set<Individual<String>> population = new HashSet<>();
@@ -170,7 +184,7 @@ public class Controller {
                 }
 
                 GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability);
+                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability, aimaMutation);
 
                 // Run for a set amount of time
                 bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
@@ -179,6 +193,7 @@ public class Controller {
                 Platform.runLater(() -> _btGenerate.setDisable(false));
             }catch (Exception e){
                 e.printStackTrace();
+                Platform.runLater(() -> _btGenerate.setDisable(false));
                 writeTA(e.getMessage());
             }
         }

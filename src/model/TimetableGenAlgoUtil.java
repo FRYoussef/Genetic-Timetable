@@ -22,9 +22,10 @@ public class TimetableGenAlgoUtil {
     }
 
     public static FitnessFunction<String> getFitnessFunction(int turns, HashMap<String, HashSet<Integer>> hmRestrictions,
-                                                                        HashMap<String, HashSet<Integer>> hmPreferences)
+                                                                        HashMap<String, HashSet<Integer>> hmPreferences,
+                                                                        HashMap<String, Boolean> hmConsecutive)
     {
-        return new TimetableFitnessFunction(hmRestrictions, hmPreferences, turns);
+        return new TimetableFitnessFunction(hmRestrictions, hmPreferences,hmConsecutive,turns);
     }
 
 
@@ -120,14 +121,17 @@ public class TimetableGenAlgoUtil {
     private static class TimetableFitnessFunction implements FitnessFunction<String>{
         private HashMap<String, HashSet<Integer>> hmRestrictions;
         private HashMap<String, HashSet<Integer>> hmPreferences;
+        private HashMap<String, Boolean> hmConsecutive;
         private int turns;
 
         public TimetableFitnessFunction(HashMap<String, HashSet<Integer>> hmRestrictions,
                                         HashMap<String, HashSet<Integer>> hmPreferences,
+                                        HashMap<String, Boolean> hmConsecutive,
                                         int turns)
         {
             this.hmRestrictions = hmRestrictions;
             this.hmPreferences = hmPreferences;
+            this.hmConsecutive = hmConsecutive;
             this.turns = turns;
         }
 
@@ -138,7 +142,7 @@ public class TimetableGenAlgoUtil {
             int repetitions = testRepetitions(individual, turns);
             if(repetitions == -1)
                 return 0.0d;
-            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d);
+            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual);
             return remainder < 0 ? 0: remainder;
         }
 
@@ -151,6 +155,42 @@ public class TimetableGenAlgoUtil {
                 }
             }
             return preferences;
+        }
+
+        private double countConsecutives(Individual<String> indi){
+            double counter = 0.0d;
+            HashMap<String, HashSet<Integer>> hmIndi = new HashMap<>(indi.length());
+            HashSet<Integer> hs;
+            for (int i = 0; i < indi.length(); i++) {
+                if(indi.getRepresentation().get(i) != null){
+                    if(hmIndi.containsKey(indi.getRepresentation().get(i)))
+                        hmIndi.get(indi.getRepresentation().get(i)).add(i);
+                    else{
+                        hs = new HashSet<>();
+                        hs.add(i);
+                        hmIndi.put(indi.getRepresentation().get(i), hs);
+                    }
+                }
+            }
+
+            for(String str: hmIndi.keySet()){
+                if(hmIndi.get(str).size() > 1){
+                    int consec = 0;
+                    int prev = -1;
+                    for(Integer turn: hmIndi.get(str)){
+                        if(prev != -1 && turn-prev == 1)
+                            consec++;
+                        prev = turn;
+                    }
+
+                    if(hmConsecutive.get(str) && consec == 0) counter -= 0.3d;
+                    else if(hmConsecutive.get(str) && consec > 0) counter += 0.3d;
+                    else if(!hmConsecutive.get(str) && consec == 0) counter += 0.3d;
+                    else if(!hmConsecutive.get(str) && consec > 0) counter -= 0.3d;
+                }
+            }
+
+            return counter;
         }
     }
 }
