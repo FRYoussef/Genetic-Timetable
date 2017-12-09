@@ -43,15 +43,20 @@ public class Controller {
     private TextField _tfCrossing;
     @FXML
     private MenuButton _btmTypeMutation;
+    @FXML
+    private MenuButton _btmTypeCrossing;
+
 
     private int turns = 0;
     private HashSet<String> hsAlphabet = null;
     private HashMap<String, HashSet<Integer>> hmRestrictions = null;
     private HashMap<String, HashSet<Integer>> hmPreferences = null;
     private HashMap<String, Boolean> hmConsecutive = null;
+    private HashMap<String, Integer> hmTurns = null;
     private Individual<String> bestIndividual = null;
     private double mutationProbability = 0.15d;
     private double crossingProbability = 0.70d;
+    private boolean aimaCrossing = true;
     private boolean aimaMutation = true;
 
     public Controller() {
@@ -152,6 +157,19 @@ public class Controller {
 
         });
     }
+    
+    public void onClickItemCrossing(ActionEvent actionEvent) {
+        Platform.runLater(() -> {
+            String str = ((MenuItem)actionEvent.getSource()).getText();
+            _btmTypeCrossing.setText(str);
+            if(str.equals("Aima Crossing"))
+                aimaCrossing = true;
+            else
+            	aimaCrossing = false;
+
+        });
+    }
+
 
     private class RnGenetic implements Runnable{
 
@@ -171,10 +189,11 @@ public class Controller {
                 hmRestrictions = reader.getTeacherRestrictions(hsAlphabet.size());
                 hmPreferences = reader.getTeacherPreferences(hsAlphabet.size());
                 hmConsecutive = reader.getTeacherConsecutivePreferences(hsAlphabet.size());
+                hmTurns = reader.getHmTurns(hsAlphabet.size());
                 reader.close();
 
                 FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
-                        hmPreferences, hmConsecutive);
+                        hmPreferences, hmConsecutive, hmTurns);
                 GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
                 // Generate an initial population
                 Set<Individual<String>> population = new HashSet<>();
@@ -184,7 +203,7 @@ public class Controller {
                 }
 
                 GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability, aimaMutation);
+                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability, aimaCrossing, aimaMutation);
 
                 // Run for a set amount of time
                 bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
