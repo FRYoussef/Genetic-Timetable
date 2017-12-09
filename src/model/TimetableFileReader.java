@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import aima.Individual;
+
 public class TimetableFileReader {
 
     private static final String REGEX1 = ",";
@@ -28,6 +30,25 @@ public class TimetableFileReader {
         return turns;
     }
 
+    public HashMap<String, Integer> getHmTurns(int numTeachers) throws Exception {
+    	HashMap<String, Integer> hm = new HashMap<>(numTeachers);
+        
+         String aux[];
+         
+         for (int i = 0; i < numTeachers; i++) {
+             aux = simplifyString(br.readLine());
+             if(aux == null)
+                 throw new Exception("Error in the input file structure");
+             if(aux.length == 2) {
+            	 Integer a = Integer.parseInt(aux[1]);
+            	 hm.put(aux[0], a);
+             }
+                 else
+                     throw new Exception("Error in the input file structure");
+         }
+        return hm;
+    }
+    
     public HashSet<String> getTeachers() throws IOException {
         String teachers[] = br.readLine().replaceAll("\\s+","").split(REGEX1);
         return new HashSet<>(Arrays.asList(teachers));
@@ -97,7 +118,7 @@ public class TimetableFileReader {
     public HashMap<String, Boolean> getTeacherConsecutivePreferences(int numTeachers) throws Exception {
         HashMap<String, Boolean> hm = new HashMap<>(numTeachers);
         String aux[];
-        int rest[];
+        
         for (int i = 0; i < numTeachers; i++) {
             aux = simplifyString(br.readLine());
             if(aux == null)

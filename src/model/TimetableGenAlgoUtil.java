@@ -1,5 +1,6 @@
 package model;
 
+import java.util.Map.Entry;
 import aima.FitnessFunction;
 import aima.GoalTest;
 import aima.Individual;
@@ -23,9 +24,10 @@ public class TimetableGenAlgoUtil {
 
     public static FitnessFunction<String> getFitnessFunction(int turns, HashMap<String, HashSet<Integer>> hmRestrictions,
                                                                         HashMap<String, HashSet<Integer>> hmPreferences,
-                                                                        HashMap<String, Boolean> hmConsecutive)
+                                                                        HashMap<String, Boolean> hmConsecutive,
+                                                                        HashMap<String, Integer> hmTurns)
     {
-        return new TimetableFitnessFunction(hmRestrictions, hmPreferences,hmConsecutive,turns);
+        return new TimetableFitnessFunction(hmRestrictions, hmPreferences,hmConsecutive,hmTurns,turns);
     }
 
 
@@ -36,7 +38,7 @@ public class TimetableGenAlgoUtil {
 
         while(!testRestrictions(indi, hmRestrictions))
             indi = getRandomIndividual(turns, alphabet);
-
+        
         return indi;
     }
 
@@ -78,7 +80,7 @@ public class TimetableGenAlgoUtil {
         return true;
     }
 
-    /**
+    /** 
      * It returns the number of strings repeated in an individual, or -1 if
      * it is not satisfy turns
      * @param ind
@@ -106,7 +108,7 @@ public class TimetableGenAlgoUtil {
     private static class TimetableGoalTest implements GoalTest<Individual<String>>{
         private HashMap<String, HashSet<Integer>> hmRestrictions;
         private int turns;
-
+        
         public TimetableGoalTest(HashMap<String, HashSet<Integer>> hmRestrictions, int turns) {
             this.hmRestrictions = hmRestrictions;
             this.turns = turns;
@@ -123,15 +125,18 @@ public class TimetableGenAlgoUtil {
         private HashMap<String, HashSet<Integer>> hmPreferences;
         private HashMap<String, Boolean> hmConsecutive;
         private int turns;
-
+        HashMap<String, Integer> hmTurns;
+        
         public TimetableFitnessFunction(HashMap<String, HashSet<Integer>> hmRestrictions,
                                         HashMap<String, HashSet<Integer>> hmPreferences,
                                         HashMap<String, Boolean> hmConsecutive,
+                                        HashMap<String, Integer> hmTurns,
                                         int turns)
         {
             this.hmRestrictions = hmRestrictions;
             this.hmPreferences = hmPreferences;
             this.hmConsecutive = hmConsecutive;
+            this.hmTurns = hmTurns;
             this.turns = turns;
         }
 
@@ -142,7 +147,8 @@ public class TimetableGenAlgoUtil {
             int repetitions = testRepetitions(individual, turns);
             if(repetitions == -1)
                 return 0.0d;
-            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual);
+            //double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual);
+            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual) + countPrefTurns(hmTurns);
             return remainder < 0 ? 0: remainder;
         }
 
@@ -156,7 +162,26 @@ public class TimetableGenAlgoUtil {
             }
             return preferences;
         }
-
+        
+        private double countPrefTurns(HashMap<String, Integer> hmTurns) {
+        	double counter = 0.0d;
+        	int numTeacher = hmTurns.size();
+        	double prefTurns = turns / numTeacher;
+        	int cont = 0;
+        	for (Map.Entry<String, Integer> entry : hmTurns.entrySet()) {
+        	    if(entry.getValue() == prefTurns)
+        	    	cont++;
+        	}
+        	if(cont == numTeacher)
+        		counter++;
+        	else if(cont  < numTeacher)
+        		counter -= 0.2d;
+        	else
+        		counter += 0.2d;
+        	
+        	return counter;
+        }
+      
         private double countConsecutives(Individual<String> indi){
             double counter = 0.0d;
             HashMap<String, HashSet<Integer>> hmIndi = new HashMap<>(indi.length());
