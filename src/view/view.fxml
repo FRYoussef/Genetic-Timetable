@@ -7,7 +7,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="500.0" prefWidth="600.0" stylesheets="@style.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="control.Controller">
+<AnchorPane prefHeight="600.0" prefWidth="600.0" stylesheets="@style.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="control.Controller">
    <children>
       <GridPane fx:id="_gpTimetable" gridLinesVisible="true" layoutX="14.0" layoutY="14.0" styleClass="GridPane" AnchorPane.leftAnchor="25.0" AnchorPane.rightAnchor="25.0" AnchorPane.topAnchor="25.0">
         <columnConstraints>
@@ -19,10 +19,10 @@
         </columnConstraints>
         <rowConstraints>
           <RowConstraints maxHeight="-Infinity" minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
             <Label alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="head" textFill="WHITE" />
@@ -84,20 +84,38 @@
             <Label alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="body" GridPane.columnIndex="4" GridPane.rowIndex="4" />
          </children>
       </GridPane>
-      <TextField fx:id="_tfPath" layoutX="278.0" layoutY="219.0" prefHeight="31.0" prefWidth="272.0" promptText="Introduce the file path" AnchorPane.rightAnchor="55.0" />
-      <Button fx:id="_btFileFinder" layoutX="550.0" layoutY="219.0" mnemonicParsing="false" onAction="#onClickFileFinder" text="..." AnchorPane.rightAnchor="25.0" />
-      <Button fx:id="_btGenerate" layoutX="499.0" layoutY="325.0" maxHeight="-Infinity" maxWidth="-Infinity" mnemonicParsing="false" onAction="#onClickGenerate" text="Generate" AnchorPane.bottomAnchor="144.0" AnchorPane.rightAnchor="25.0" />
+      <TextField fx:id="_tfPath" layoutX="278.0" layoutY="219.0" prefHeight="31.0" prefWidth="272.0" promptText="Introduce the file path" AnchorPane.bottomAnchor="310.0" AnchorPane.rightAnchor="55.0" />
+      <Button fx:id="_btFileFinder" layoutX="550.0" layoutY="219.0" mnemonicParsing="false" onAction="#onClickFileFinder" text="..." AnchorPane.bottomAnchor="310.0" AnchorPane.rightAnchor="25.0" />
+      <Button fx:id="_btGenerate" alignment="CENTER" layoutX="499.0" layoutY="325.0" maxHeight="-Infinity" maxWidth="-Infinity" mnemonicParsing="false" onAction="#onClickGenerate" text="Generate" AnchorPane.bottomAnchor="145.0" AnchorPane.rightAnchor="25.0" AnchorPane.topAnchor="350.0" />
       <TextArea fx:id="_taLog" editable="false" layoutX="164.0" layoutY="186.0" prefHeight="100.0" prefWidth="200.0" styleClass="TextArea" AnchorPane.bottomAnchor="25.0" AnchorPane.leftAnchor="25.0" AnchorPane.rightAnchor="25.0" />
-      <Label alignment="CENTER" layoutX="24.0" layoutY="224.0" text="Mutation Probability:" AnchorPane.leftAnchor="24.0" />
-      <Label alignment="CENTER" layoutX="26.0" layoutY="276.0" text="Crossing Probability:" AnchorPane.leftAnchor="26.0" />
-      <TextField fx:id="_tfMutation" alignment="CENTER" layoutX="178.0" layoutY="219.0" prefWidth="70.0" text="0.15" />
-      <TextField fx:id="_tfCrossing" alignment="CENTER" layoutX="178.0" layoutY="271.0" prefWidth="70.0" text="0.70" />
-      <Separator layoutY="196.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="600.0" AnchorPane.topAnchor="195.0" />
-      <Separator layoutX="5.0" layoutY="365.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="3.0" prefWidth="600.0" AnchorPane.bottomAnchor="132.0" />
-      <MenuButton fx:id="_btmTypeMutation" layoutX="24.0" layoutY="325.0" mnemonicParsing="false" text="Aima Mutation" wrapText="true" AnchorPane.bottomAnchor="144.0" AnchorPane.leftAnchor="25.0">
+      <Label alignment="CENTER" layoutX="24.0" layoutY="224.0" text="Mutation Probability:" AnchorPane.bottomAnchor="315.0" AnchorPane.leftAnchor="25.0" />
+      <Label alignment="CENTER" layoutX="26.0" layoutY="276.0" text="Crossing Probability:" AnchorPane.bottomAnchor="265.0" AnchorPane.leftAnchor="25.0" />
+      <TextField fx:id="_tfMutation" alignment="CENTER" layoutX="178.0" layoutY="219.0" prefWidth="70.0" text="0.15" AnchorPane.bottomAnchor="310.0" AnchorPane.leftAnchor="178.0" />
+      <TextField fx:id="_tfCrossing" alignment="CENTER" layoutX="178.0" layoutY="271.0" prefWidth="70.0" text="0.70" AnchorPane.bottomAnchor="260.0" AnchorPane.leftAnchor="178.0" />
+      <Separator layoutY="196.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="600.0" AnchorPane.bottomAnchor="350.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" />
+      <Separator layoutX="5.0" layoutY="365.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="3.0" prefWidth="600.0" AnchorPane.bottomAnchor="132.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" />
+      <MenuButton fx:id="_btmTypeMutation" layoutX="26.0" layoutY="377.0" mnemonicParsing="false" text="Aima Mutation" wrapText="true" AnchorPane.bottomAnchor="145.0" AnchorPane.leftAnchor="25.0">
         <items>
           <MenuItem mnemonicParsing="false" onAction="#onClickItemMutation" text="Aima Mutation" />
           <MenuItem mnemonicParsing="false" onAction="#onClickItemMutation" text="Two Points Mutation" />
+        </items>
+      </MenuButton>
+      <MenuButton fx:id="_btmCrossing" layoutX="231.0" layoutY="330.0" mnemonicParsing="false" text="Crossing With 1 Point" AnchorPane.bottomAnchor="200.0" AnchorPane.leftAnchor="230.0">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#onClickPointCrossing" text="Crossing With 1 Point" />
+          <MenuItem mnemonicParsing="false" onAction="#onClickPointCrossing" text="Crossing With 2 Point" />
+        </items>
+      </MenuButton>
+      <MenuButton fx:id="_btmSelection" layoutX="26.0" layoutY="325.0" mnemonicParsing="false" text="Selection: Roulette" AnchorPane.bottomAnchor="200.0" AnchorPane.leftAnchor="25.0">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#onClickSelection" text="Selection: Roulette" />
+          <MenuItem mnemonicParsing="false" onAction="#onClickSelection" text="Selection: Tournament" />
+        </items>
+      </MenuButton>
+      <MenuButton fx:id="_btmTechTurn" layoutX="217.0" layoutY="394.0" mnemonicParsing="false" text="Teachers Per Turn: 1" AnchorPane.bottomAnchor="145.0" AnchorPane.leftAnchor="230.0">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#onClickTeachTurn" text="Teachers Per Turn: 1" />
+          <MenuItem mnemonicParsing="false" onAction="#onClickTeachTurn" text="Teachers Per Turn: 2" />
         </items>
       </MenuButton>
    </children>

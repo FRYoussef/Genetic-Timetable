@@ -24,4 +24,11 @@ Juanan:
 Marlon:
 Raquel: +
 Virginia: -
-
+Antonio: 1
+Belen: 0  
+Fernando: 1
+Guillermo: 1
+Juanan: 0
+Marlon: 0
+Raquel: 1
+Virginia: 1

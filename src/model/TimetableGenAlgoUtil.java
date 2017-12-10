@@ -1,6 +1,5 @@
 package model;
 
-import java.util.Map.Entry;
 import aima.FitnessFunction;
 import aima.GoalTest;
 import aima.Individual;
@@ -17,27 +16,28 @@ public class TimetableGenAlgoUtil {
      * @param hmRestrictions
      * @return
      */
-    public static GoalTest<Individual<String>> getGoalTest(HashMap<String, HashSet<Integer>> hmRestrictions, int turns)
+    public static GoalTest<Individual<String[]>> getGoalTest(HashMap<String, HashSet<Integer>> hmRestrictions, int turns)
     {
         return new TimetableGoalTest(hmRestrictions, turns);
     }
 
-    public static FitnessFunction<String> getFitnessFunction(int turns, HashMap<String, HashSet<Integer>> hmRestrictions,
+    public static FitnessFunction<String[]> getFitnessFunction(int turns, HashMap<String, HashSet<Integer>> hmRestrictions,
                                                                         HashMap<String, HashSet<Integer>> hmPreferences,
                                                                         HashMap<String, Boolean> hmConsecutive,
-                                                                        HashMap<String, Integer> hmTurns)
+                                                                        HashMap<String, Integer> hmTurnsMade)
     {
-        return new TimetableFitnessFunction(hmRestrictions, hmPreferences,hmConsecutive,hmTurns,turns);
+        return new TimetableFitnessFunction(hmRestrictions, hmPreferences,hmConsecutive,hmTurnsMade,turns);
     }
 
 
-    public static Individual<String> generateRandomIndividual(int turns, ArrayList<String> alphabet,
-                                                              HashMap<String, HashSet<Integer>> hmRestrictions)
+    public static Individual<String[]> generateRandomIndividual(int turns, ArrayList<String> alphabet,
+                                                              HashMap<String, HashSet<Integer>> hmRestrictions,
+                                                              int teacherPerTurn)
     {
-        Individual<String> indi = getRandomIndividual(turns, alphabet);
+        Individual<String[]> indi = getRandomIndividual(turns, alphabet, teacherPerTurn);
 
         while(!testRestrictions(indi, hmRestrictions))
-            indi = getRandomIndividual(turns, alphabet);
+            indi = getRandomIndividual(turns, alphabet, teacherPerTurn);
         
         return indi;
     }
@@ -47,21 +47,37 @@ public class TimetableGenAlgoUtil {
      * @param turns to create an individual
      * @return the individual
      */
-    private static Individual<String> getRandomIndividual(int turns, ArrayList<String> alphabet){
-        String [] indi = new String[MAX_TURNS];
+    private static Individual<String[]> getRandomIndividual(int turns, ArrayList<String> alphabet, int teacherPerTurn){
+        ArrayList<String[]> indi = new ArrayList<>(MAX_TURNS);
+        for (int i = 0; i < MAX_TURNS; i++)
+            indi.add(new String[teacherPerTurn]);
+
         int pos;
-        int posAlphabet;
+        int []posAlphabet = new int[teacherPerTurn];
         int elems = 0;
         while(elems != turns){
             pos = r.nextInt(MAX_TURNS);
-            posAlphabet = r.nextInt(alphabet.size());
-            if(indi[pos] == null || indi[pos].equals("")) {
-                indi[pos] = alphabet.get(posAlphabet);
+
+            //checking different names per turn
+            for (int i = 0; i < posAlphabet.length; i++){
+                posAlphabet[i] = r.nextInt(alphabet.size());
+                for (int j = 0; j < i; j++) {
+                    if(posAlphabet[i] == posAlphabet[j])
+                        i--;
+                }
+            }
+
+            if(indi.get(pos)[0] == null) {
+                indi.set(pos, new String[teacherPerTurn]);
+
+                for (int i = 0; i < teacherPerTurn; i++)
+                    indi.get(pos)[i] = alphabet.get(posAlphabet[i]);
+
                 elems++;
             }
         }
 
-        return new Individual<>(new ArrayList<>(Arrays.asList(indi)));
+        return new Individual<>(indi);
     }
 
     /**
@@ -70,11 +86,13 @@ public class TimetableGenAlgoUtil {
      * @param hmRestrictions
      * @return
      */
-    private static boolean testRestrictions(Individual<String> ind, HashMap<String, HashSet<Integer>> hmRestrictions){
+    private static boolean testRestrictions(Individual<String[]> ind, HashMap<String, HashSet<Integer>> hmRestrictions){
         for (int i = 0; i < ind.length(); i++) {
-            if(ind.getRepresentation().get(i) != null){
-                if((hmRestrictions.get(ind.getRepresentation().get(i))).contains(i+1))
-                    return false;
+            if(ind.getRepresentation().get(i)[0] != null){
+                for (int j = 0; j < ind.getRepresentation().get(i).length; j++) {
+                    if((hmRestrictions.get(ind.getRepresentation().get(i)[j])).contains(i+1))
+                        return false;
+                }
             }
         }
         return true;
@@ -87,25 +105,31 @@ public class TimetableGenAlgoUtil {
      * @param turns
      * @return
      */
-    private static int testRepetitions(Individual<String> ind, int turns){
+    private static int testRepetitions(Individual<String[]> ind, int turns){
         HashMap<String, Integer> hmRepetitions = new HashMap<>();
         int counter = 0;
-        for (String s : ind.getRepresentation()){
-            if(s != null && !hmRepetitions.containsKey(s))
-                hmRepetitions.put(s, 1);
-            else if(s != null)
-                hmRepetitions.replace(s, hmRepetitions.get(s), hmRepetitions.get(s)+1);
+        int counterTurns = 0;
+        for (String[] s : ind.getRepresentation()){
+            if(s[0] != null){
+                counterTurns++;
+                for (String te : s) {
+                    if(!hmRepetitions.containsKey(te))
+                        hmRepetitions.put(te, 1);
+                    else
+                        hmRepetitions.replace(te, hmRepetitions.get(te)+1);
+                }
+            }
         }
 
         for(String s : hmRepetitions.keySet())
             counter += hmRepetitions.get(s) - 1;
 
-        if(hmRepetitions.size() + counter != turns)
+        if(counterTurns != turns)
             return -1;
         return counter;
     }
 
-    private static class TimetableGoalTest implements GoalTest<Individual<String>>{
+    private static class TimetableGoalTest implements GoalTest<Individual<String[]>>{
         private HashMap<String, HashSet<Integer>> hmRestrictions;
         private int turns;
         
@@ -115,85 +139,94 @@ public class TimetableGenAlgoUtil {
         }
 
         @Override
-        public boolean test(Individual<String> individual) {
+        public boolean test(Individual<String[]> individual) {
             return testRestrictions(individual, hmRestrictions) && testRepetitions(individual, turns) != -1;
         }
     }
 
-    private static class TimetableFitnessFunction implements FitnessFunction<String>{
+    private static class TimetableFitnessFunction implements FitnessFunction<String[]>{
         private HashMap<String, HashSet<Integer>> hmRestrictions;
         private HashMap<String, HashSet<Integer>> hmPreferences;
         private HashMap<String, Boolean> hmConsecutive;
         private int turns;
-        HashMap<String, Integer> hmTurns;
+        HashMap<String, Integer> hmTurnsMade;
         
         public TimetableFitnessFunction(HashMap<String, HashSet<Integer>> hmRestrictions,
                                         HashMap<String, HashSet<Integer>> hmPreferences,
                                         HashMap<String, Boolean> hmConsecutive,
-                                        HashMap<String, Integer> hmTurns,
+                                        HashMap<String, Integer> hmTurnsMade,
                                         int turns)
         {
             this.hmRestrictions = hmRestrictions;
             this.hmPreferences = hmPreferences;
             this.hmConsecutive = hmConsecutive;
-            this.hmTurns = hmTurns;
+            this.hmTurnsMade = hmTurnsMade;
             this.turns = turns;
         }
 
         @Override
-        public double apply(Individual<String> individual) {
+        public double apply(Individual<String[]> individual) {
             if(!testRestrictions(individual, hmRestrictions))
                 return 0.0d;
             int repetitions = testRepetitions(individual, turns);
             if(repetitions == -1)
                 return 0.0d;
-            //double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual);
-            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d) + countConsecutives(individual) + countPrefTurns(hmTurns);
+
+            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d)
+                                + countConsecutives(individual) + countPrefTurns(individual);
             return remainder < 0 ? 0: remainder;
         }
 
-        private int countPreferences(Individual<String> indi){
+        private int countPreferences(Individual<String[]> indi){
             int preferences = 0;
             for (int i = 0; i < indi.length(); i++) {
-                if(indi.getRepresentation().get(i) != null){
-                    if((hmPreferences.get(indi.getRepresentation().get(i))).contains(i+1))
-                        preferences++;
+                if(indi.getRepresentation().get(i)[0] != null){
+                    for(String te : indi.getRepresentation().get(i)){
+                        if((hmPreferences.get(te)).contains(i+1))
+                            preferences++;
+                    }
                 }
             }
             return preferences;
         }
         
-        private double countPrefTurns(HashMap<String, Integer> hmTurns) {
-        	double counter = 0.0d;
-        	int numTeacher = hmTurns.size();
-        	double prefTurns = turns / numTeacher;
-        	int cont = 0;
-        	for (Map.Entry<String, Integer> entry : hmTurns.entrySet()) {
-        	    if(entry.getValue() == prefTurns)
-        	    	cont++;
-        	}
-        	if(cont == numTeacher)
-        		counter++;
-        	else if(cont  < numTeacher)
-        		counter -= 0.2d;
-        	else
-        		counter += 0.2d;
-        	
-        	return counter;
+        private double countPrefTurns(Individual<String[]> indi) {
+        	int numTeacher = hmTurnsMade.size();
+
+        	int totalTurnsMade = 0;
+
+        	HashMap<String, Integer> newHmTurnsMade = (HashMap<String, Integer>)hmTurnsMade.clone();
+        	for(String[] s : indi.getRepresentation()){
+        	    if(s[0] != null){
+                    for (String te : s){
+                        newHmTurnsMade.replace(te, newHmTurnsMade.get(te) + 1);
+                        totalTurnsMade += newHmTurnsMade.get(te);
+                    }
+                }
+            }
+
+        	int turnsPerTeacher = Math.round(totalTurnsMade / numTeacher);
+            int count = 0;
+            for (String te : newHmTurnsMade.keySet())
+                count -= Math.abs(turnsPerTeacher - newHmTurnsMade.get(te));
+
+        	return count*0.1d;
         }
       
-        private double countConsecutives(Individual<String> indi){
+        private double countConsecutives(Individual<String[]> indi){
             double counter = 0.0d;
             HashMap<String, HashSet<Integer>> hmIndi = new HashMap<>(indi.length());
             HashSet<Integer> hs;
             for (int i = 0; i < indi.length(); i++) {
-                if(indi.getRepresentation().get(i) != null){
-                    if(hmIndi.containsKey(indi.getRepresentation().get(i)))
-                        hmIndi.get(indi.getRepresentation().get(i)).add(i);
-                    else{
-                        hs = new HashSet<>();
-                        hs.add(i);
-                        hmIndi.put(indi.getRepresentation().get(i), hs);
+                if(indi.getRepresentation().get(i)[0] != null){
+                    for(String te : indi.getRepresentation().get(i)){
+                        if(hmIndi.containsKey(te))
+                            hmIndi.get(te).add(i);
+                        else{
+                            hs = new HashSet<>();
+                            hs.add(i);
+                            hmIndi.put(te, hs);
+                        }
                     }
                 }
             }

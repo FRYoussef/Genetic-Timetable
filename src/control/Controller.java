@@ -44,7 +44,11 @@ public class Controller {
     @FXML
     private MenuButton _btmTypeMutation;
     @FXML
-    private MenuButton _btmTypeCrossing;
+    private MenuButton _btmCrossing;
+    @FXML
+    private MenuButton _btmSelection;
+    @FXML
+    private MenuButton _btmTechTurn;
 
 
     private int turns = 0;
@@ -53,11 +57,13 @@ public class Controller {
     private HashMap<String, HashSet<Integer>> hmPreferences = null;
     private HashMap<String, Boolean> hmConsecutive = null;
     private HashMap<String, Integer> hmTurns = null;
-    private Individual<String> bestIndividual = null;
+    private Individual<String[]> bestIndividual = null;
     private double mutationProbability = 0.15d;
     private double crossingProbability = 0.70d;
-    private boolean aimaCrossing = true;
     private boolean aimaMutation = true;
+    private boolean crossingWithAPoint = true;
+    private int selectionType = GeneticAlgorithm.ROULETTE_SELECTION;
+    private int teachersPerTurn = 1;
 
     public Controller() {
         this.stage = new Stage();
@@ -116,6 +122,7 @@ public class Controller {
         _btGenerate.setDisable(true);
         Thread th = new Thread(new RnGenetic(nom));
         th.setDaemon(true);
+
         th.start();
     }
     
@@ -135,9 +142,12 @@ public class Controller {
                 if(bestIndividual.getRepresentation().get(i) != null){
                     int row = hmRepresentation.get(i+1).getKey();
                     int col = hmRepresentation.get(i+1).getValue();
-                    ((Label)_gpTimetable.getChildren().get(row*5+col)).setText(bestIndividual.getRepresentation().get(i));
+                    StringBuilder text = new StringBuilder();
+                    for (String te : bestIndividual.getRepresentation().get(i))
+                        if(te != null)
+                            text.append(te).append("\n");
+                    ((Label)_gpTimetable.getChildren().get(row*5+col)).setText(text.toString());
                 }
-
             }
         });
     }
@@ -157,19 +167,42 @@ public class Controller {
 
         });
     }
-    
-    public void onClickItemCrossing(ActionEvent actionEvent) {
+
+    public void onClickPointCrossing(ActionEvent actionEvent) {
         Platform.runLater(() -> {
             String str = ((MenuItem)actionEvent.getSource()).getText();
-            _btmTypeCrossing.setText(str);
-            if(str.equals("Aima Crossing"))
-                aimaCrossing = true;
+            _btmCrossing.setText(str);
+            if(str.equals("Crossing With 1 Point"))
+                crossingWithAPoint = true;
             else
-            	aimaCrossing = false;
+                crossingWithAPoint = false;
 
         });
     }
 
+    public void onClickSelection(ActionEvent actionEvent) {
+        Platform.runLater(() -> {
+            String str = ((MenuItem)actionEvent.getSource()).getText();
+            _btmSelection.setText(str);
+            if(str.equals("Selection: Roulette"))
+                selectionType = GeneticAlgorithm.ROULETTE_SELECTION;
+            else
+                selectionType = GeneticAlgorithm.TOURNAMENT_SELECTION;
+
+        });
+    }
+
+    public void onClickTeachTurn(ActionEvent actionEvent) {
+        Platform.runLater(() -> {
+            String str = ((MenuItem)actionEvent.getSource()).getText();
+            _btmTechTurn.setText(str);
+            if(str.equals("Teachers Per Turn: 1"))
+                teachersPerTurn = 1;
+            else
+                teachersPerTurn = 2;
+
+        });
+    }
 
     private class RnGenetic implements Runnable{
 
@@ -192,24 +225,36 @@ public class Controller {
                 hmTurns = reader.getHmTurns(hsAlphabet.size());
                 reader.close();
 
-                FitnessFunction<String> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
+                FitnessFunction<String[]> fitnessFunction = TimetableGenAlgoUtil.getFitnessFunction(turns, hmRestrictions,
                         hmPreferences, hmConsecutive, hmTurns);
-                GoalTest<Individual<String>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
+                GoalTest<Individual<String[]>> goalTest = TimetableGenAlgoUtil.getGoalTest(hmRestrictions, turns);
                 // Generate an initial population
-                Set<Individual<String>> population = new HashSet<>();
+                Set<Individual<String[]>> population = new HashSet<>();
                 ArrayList<String> alpha = new ArrayList<>(hsAlphabet);
                 for (int i = 0; i < 50; i++) {
-                    population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions));
+                    population.add(TimetableGenAlgoUtil.generateRandomIndividual(turns, alpha, hmRestrictions, teachersPerTurn));
                 }
 
-                GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS,
-                        new ArrayList<>(hsAlphabet), mutationProbability, crossingProbability, aimaCrossing, aimaMutation);
+                GeneticAlgorithm<String> ga = new GeneticAlgorithm<>(TimetableGenAlgoUtil.MAX_TURNS, alpha,
+                        mutationProbability, crossingProbability, crossingWithAPoint, aimaMutation, selectionType, teachersPerTurn);
 
                 // Run for a set amount of time
-                bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 1000L);
+                bestIndividual = ga.geneticAlgorithm(population, fitnessFunction, goalTest, 2000L);
                 clearTimeTable();
                 showResult();
                 Platform.runLater(() -> _btGenerate.setDisable(false));
+                StringBuilder sb = new StringBuilder();
+                      sb.append("Fitness = ").append(fitnessFunction.apply(bestIndividual)).append("\n")
+                        .append("Is Goal = ")
+                        .append(goalTest.test(bestIndividual))
+                        .append("\n")
+                        .append("Population Size = ")
+                        .append(ga.getPopulationSize()).append("\n")
+                        .append("Iterations = ")
+                        .append(ga.getIterations()).append("\n")
+                        .append("Took = ")
+                        .append(ga.getTimeInMilliseconds()).append("ms.\n");
+                writeTA(sb.toString());
             }catch (Exception e){
                 e.printStackTrace();
                 Platform.runLater(() -> _btGenerate.setDisable(false));
