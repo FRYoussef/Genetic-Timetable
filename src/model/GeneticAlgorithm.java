@@ -1,4 +1,6 @@
-package aima;
+package model;
+
+import aima.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -122,7 +124,7 @@ public class GeneticAlgorithm<A> {
      * iterations.
      */
     public Individual<A[]> geneticAlgorithm(Collection<Individual<A[]>> initPopulation,
-                                          FitnessFunction<A[]> fitnessFn, final int maxIterations) {
+                                            FitnessFunction<A[]> fitnessFn, final int maxIterations) {
         GoalTest<Individual<A[]>> goalTest = state -> getIterations() >= maxIterations;
         return geneticAlgorithm(initPopulation, fitnessFn, goalTest, 0L);
     }
@@ -164,7 +166,7 @@ public class GeneticAlgorithm<A> {
         // repeat
         int itCount = 0;
         do {
-            population = nextGeneration(population, fitnessFn);
+            population = nextGeneration(population, fitnessFn, goalTest);
             bestIndividual = retrieveBestIndividual(population, fitnessFn);
 
             updateMetrics(population, ++itCount, System.currentTimeMillis() - startTime);
@@ -262,7 +264,8 @@ public class GeneticAlgorithm<A> {
      * Primitive operation which is responsible for creating the next
      * generation. Override to get progress information!
      */
-    protected List<Individual<A[]>> nextGeneration(List<Individual<A[]>> population, FitnessFunction<A[]> fitnessFn) {
+    protected List<Individual<A[]>> nextGeneration(List<Individual<A[]>> population, FitnessFunction<A[]> fitnessFn
+                                                    , GoalTest<Individual<A[]>> goalTest) {
         List<Individual<A[]>> newPopulation = new ArrayList<Individual<A[]>>(population.size());
         Random random;
     	random = new Random();
@@ -283,15 +286,15 @@ public class GeneticAlgorithm<A> {
             if (random.nextDouble() <= crossingProbability) {
                 List<Individual<A[]>> children;
                 if (crossingWithAPoint)
-                    children = reproduce(x, y);
+                    children = reproduce(x, y, goalTest);
                 else
-                    children = reproduceTwoPoints(x, y);
+                    children = reproduceTwoPoints(x, y, goalTest);
 
                 //Individual<A> child = reproduce(x, y);
                 if (random.nextDouble() <= mutationProbability) {
                     if (aimaMutation) {
-                        children.set(0, mutate(children.get(0)));
-                        children.set(1, mutate(children.get(1)));
+                        children.set(0, mutate(children.get(0), goalTest));
+                        children.set(1, mutate(children.get(1), goalTest));
                     } else {
                         for (int j = 0; j < children.size(); j++)
                             children.set(j, mutateTwoPoints(children.get(j)));
@@ -357,7 +360,7 @@ public class GeneticAlgorithm<A> {
         // Normalize the fitness values
         fValues = Util.normalize(fValues);
         double prob = 0.0;
-        while(prob == 0.0) prob = random.nextDouble();
+        //while(prob == 0.0) prob = random.nextDouble();
         double totalSoFar = 0.0;
         for (int i = 0; i < fValues.length; i++) {
             // Are at last element so assign by default
@@ -373,7 +376,7 @@ public class GeneticAlgorithm<A> {
         return selected;
     }
     
-    //Seleccion por torneo(Determinística)
+    //Seleccion por torneo(Determinï¿½stica)
     protected Individual<A[]> tournamentSelection(List<Individual<A[]>> population, FitnessFunction<A[]> fitnessFn) {
     	Individual<A[]> selected = population.get(population.size() - 1);
     	int p = 2;
@@ -394,14 +397,16 @@ public class GeneticAlgorithm<A> {
     
     // function REPRODUCE(x, y) returns an individual
     // inputs: x, y, parent individuals
-    protected List<Individual<A[]>> reproduce(Individual<A[]> x, Individual<A[]> y) {
-        int c = randomOffset(individualLength);
+    protected List<Individual<A[]>> reproduce(Individual<A[]> x, Individual<A[]> y, GoalTest<Individual<A[]>> goalTest) {
+        List<Individual<A[]>> a = new ArrayList<Individual<A[]>>(2);
+        do{
+            int c = randomOffset(individualLength);
+            Individual<A[]> child1Representation = this.reproduceAux(x,y,c);
+            Individual<A[]> child2Representation = this.reproduceAux(y,x,c);
+            a.add(0, child1Representation);
+            a.add(1, child2Representation);
+        }while (!goalTest.test(a.get(0)) && !goalTest.test(a.get(1)));
 
-        Individual<A[]> child1Representation = this.reproduceAux(x,y,c);
-        Individual<A[]> child2Representation = this.reproduceAux(y,x,c);
-        List<Individual<A[]>> a = new ArrayList<Individual<A[]>>();
-        a.add(0, child1Representation);
-        a.add(1, child2Representation);
         return a;
     }
 
@@ -423,52 +428,57 @@ public class GeneticAlgorithm<A> {
     	return new Individual<A[]>(childRepresentation);
     }
     
-    protected List<Individual<A[]>> reproduceTwoPoints(Individual<A[]> x, Individual<A[]> y) {
-    	int c = randomOffset(individualLength);
-    	int d = randomOffset(individualLength);
-    	
-    	Individual<A[]> child1Representation;
-    	Individual<A[]> child2Representation;
-    	
-    	while(c == d)
-    		d = randomOffset(individualLength);
-    	if(c < d) {
-    		child1Representation = this.reproduceTwoPointsAux(x,y,c,d);
-    		child2Representation = this.reproduceTwoPointsAux(y,x,c,d);
-    	}
-    	else {
-    		child1Representation = this.reproduceTwoPointsAux(x,y,d,c);
-    		child2Representation = this.reproduceTwoPointsAux(y,x,d,c);
-    	}
-    	List<Individual<A[]>> a = new ArrayList<Individual<A[]>>();
-    	a.add(0, child1Representation);
-        a.add(1, child2Representation);
+    protected List<Individual<A[]>> reproduceTwoPoints(Individual<A[]> x, Individual<A[]> y, GoalTest<Individual<A[]>> goalTest) {
+        List<Individual<A[]>> a = new ArrayList<Individual<A[]>>(2);
+        do{
+            int c = randomOffset(individualLength);
+            int d = randomOffset(individualLength);
+
+            Individual<A[]> child1Representation;
+            Individual<A[]> child2Representation;
+
+            while(c == d)
+                d = randomOffset(individualLength);
+            if(c < d) {
+                child1Representation = this.reproduceTwoPointsAux(x,y,c,d);
+                child2Representation = this.reproduceTwoPointsAux(y,x,c,d);
+            }
+            else {
+                child1Representation = this.reproduceTwoPointsAux(x,y,d,c);
+                child2Representation = this.reproduceTwoPointsAux(y,x,d,c);
+            }
+
+            a.add(0, child1Representation);
+            a.add(1, child2Representation);
+        }while (!goalTest.test(a.get(0)) && !goalTest.test(a.get(1)));
+
     	return a;
     }
 
-    protected Individual<A[]> mutate(Individual<A[]> child) {
-        int mutateOffset = randomOffset(individualLength);
-        int alphaOffset[] = new int[teachersPerTurn];
+    protected Individual<A[]> mutate(Individual<A[]> child, GoalTest<Individual<A[]>> goalTest) {
+        Individual<A[]> childMutated;
+        do{
+            int mutateOffset = randomOffset(individualLength);
+            int alphaOffset[] = new int[teachersPerTurn];
 
-        for (int i = 0; i < alphaOffset.length; i++) {
-            alphaOffset[i] = randomOffset(finiteAlphabet.size());
-            for (int j = 0; j < i; j++) {
-                if(alphaOffset[i] == alphaOffset[j])
-                    i--;
+            for (int i = 0; i < alphaOffset.length; i++) {
+                alphaOffset[i] = randomOffset(finiteAlphabet.size());
+                for (int j = 0; j < i; j++) {
+                    if(alphaOffset[i] == alphaOffset[j])
+                        i--;
+                }
             }
-        }
 
-        String[] mutation = new String[teachersPerTurn];
-        for (int i = 0; i < alphaOffset.length; i++)
-            mutation[i] = (String) finiteAlphabet.get(alphaOffset[i]);
+            String[] mutation = new String[teachersPerTurn];
+            for (int i = 0; i < alphaOffset.length; i++)
+                mutation[i] = (String) finiteAlphabet.get(alphaOffset[i]);
 
+            List<A[]> mutatedRepresentation = new ArrayList<A[]>(child.getRepresentation());
+            mutatedRepresentation.set(mutateOffset, (A[]) mutation);
+            childMutated = new Individual<A[]>(mutatedRepresentation);
+        }while (!goalTest.test(childMutated));
 
-        List<A[]> mutatedRepresentation = new ArrayList<A[]>(child.getRepresentation());
-
-
-        mutatedRepresentation.set(mutateOffset, (A[]) mutation);
-
-        return new Individual<A[]>(mutatedRepresentation);
+        return childMutated;
     }
 
     /**

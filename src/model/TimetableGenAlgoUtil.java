@@ -166,14 +166,8 @@ public class TimetableGenAlgoUtil {
 
         @Override
         public double apply(Individual<String[]> individual) {
-            if(!testRestrictions(individual, hmRestrictions))
-                return 0.0d;
-            int repetitions = testRepetitions(individual, turns);
-            if(repetitions == -1)
-                return 0.0d;
-
-            double remainder = (countPreferences(individual)+0.5d) - (repetitions * 0.5d)
-                                + countConsecutives(individual) + countPrefTurns(individual);
+            double remainder = (countPreferences(individual)+0.5d) - (testRepetitions(individual, turns) * 0.5d)
+                                + countConsecutives(individual) + countPrefTurns(individual)*0.1d;
             return remainder < 0 ? 0: remainder;
         }
 
@@ -210,7 +204,7 @@ public class TimetableGenAlgoUtil {
             for (String te : newHmTurnsMade.keySet())
                 count -= Math.abs(turnsPerTeacher - newHmTurnsMade.get(te));
 
-        	return count*0.1d;
+        	return count;
         }
       
         private double countConsecutives(Individual<String[]> indi){

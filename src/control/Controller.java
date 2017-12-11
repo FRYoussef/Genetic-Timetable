@@ -1,7 +1,7 @@
 package control;
 
 import aima.FitnessFunction;
-import aima.GeneticAlgorithm;
+import model.GeneticAlgorithm;
 import aima.GoalTest;
 import aima.Individual;
 import javafx.application.Platform;
